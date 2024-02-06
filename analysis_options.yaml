@@ -1,0 +1,26 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    prefer_relative_imports: false
+    avoid_void_async: true
+    non_constant_identifier_names: false
+    no_leading_underscores_for_local_identifiers: false
+
+analyzer:
+  plugins:
+    - custom_lint
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/generated/**"
+  errors:
+    invalid_annotation_target: ignore
+    public_member_api_docs: false
+    lines_longer_than_80_chars: false
+    avoid_positional_boolean_parameters: false
+    flutter_style_todos: false
+    use_setters_to_change_properties: false
+    sort_pub_dependencies: false
+    avoid_dynamic_calls: false
+    cast_nullable_to_non_nullable: false
