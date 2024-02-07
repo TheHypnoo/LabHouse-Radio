@@ -34,7 +34,6 @@ Future<void> main() async {
   };
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    debugPrint('DETAILS: ${details.exceptionAsString()} "${details.stack}"');
     return Scaffold(
       body: Center(
         child: Text(
@@ -56,7 +55,6 @@ Future<void> main() async {
       overrides: [
         isarProvider.overrideWithValue(isar),
       ],
-      observers: const [], //const [StateLogger()],
       child: const App(),
     ),
   );
