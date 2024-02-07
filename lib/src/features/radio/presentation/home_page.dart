@@ -164,100 +164,92 @@ class _HomePageState extends ConsumerState<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           switch (listFavorites) {
-            AsyncData(:final value) => Flexible(
-                flex: 0,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'My Favorites',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
+            AsyncData(:final value) => Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'My Favorites',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    if (value.isEmpty)
+                      const SizedBox()
+                    else
+                      SizedBox(
+                        height: 80,
+                        child: ListView.builder(
+                          itemCount: value.length,
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            return GestureDetector(
+                              onTap: () async => audioHandler.setSong(
+                                MediaItem(
+                                  extras: <String, dynamic>{
+                                    'url': value[index].url ?? 'No url',
+                                    'language':
+                                        value[index].country ?? 'No country',
+                                  },
+                                  artUri:
+                                      value[index].favicon?.isNotEmpty ?? false
+                                          ? Uri.parse(
+                                              value[index].favicon as String,
+                                            )
+                                          : null,
+                                  id: value[index].internalId ?? 'No name',
+                                  title: value[index].name ?? 'No name',
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundImage: Image.network(
+                                        value[index].favicon?.isNotEmpty ??
+                                                false
+                                            ? value[index].favicon as String
+                                            : 'https://via.placeholder.com/150',
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const SizedBox(),
+                                      ).image,
+                                    ),
+                                    Text(
+                                      value[index].name ?? 'No name',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
-                      if (value.isEmpty)
-                        const SizedBox()
-                      else
-                        SizedBox(
-                          height: 80,
-                          child: ListView.builder(
-                            itemCount: value.length,
-                            scrollDirection: Axis.horizontal,
-                            itemBuilder: (context, index) {
-                              return GestureDetector(
-                                onTap: () async => audioHandler.setSong(
-                                  MediaItem(
-                                    extras: <String, dynamic>{
-                                      'url': value[index].url ?? 'No url',
-                                      'language':
-                                          value[index].country ?? 'No country',
-                                    },
-                                    artUri: value[index].favicon?.isNotEmpty ??
-                                            false
-                                        ? Uri.parse(
-                                            value[index].favicon as String,
-                                          )
-                                        : null,
-                                    id: value[index].internalId ?? 'No name',
-                                    title: value[index].name ?? 'No name',
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage: Image.network(
-                                          value[index].favicon?.isNotEmpty ??
-                                                  false
-                                              ? value[index].favicon as String
-                                              : 'https://via.placeholder.com/150',
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  const SizedBox(),
-                                        ).image,
-                                      ),
-                                      Text(
-                                        value[index].name ?? 'No name',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             AsyncError(:final error) => Text('error: $error'),
             _ => const Text('loading'),
           },
-          Flexible(
-            flex: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: CupertinoSearchTextField(
-                onChanged: (value) {
-                  debouncer.run(() async {
-                    if (value.isEmpty) {
-                      await ref
-                          .read(radioPaginationNotifierProvider.notifier)
-                          .resetList();
-                    } else {
-                      await ref
-                          .read(radioPaginationNotifierProvider.notifier)
-                          .searchRadios(value);
-                    }
-                  });
-                },
-              ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: CupertinoSearchTextField(
+              onChanged: (value) => debouncer.run(() async {
+                if (value.isEmpty) {
+                  await ref
+                      .read(radioPaginationNotifierProvider.notifier)
+                      .resetList();
+                } else {
+                  await ref
+                      .read(radioPaginationNotifierProvider.notifier)
+                      .searchRadios(value);
+                }
+              }),
             ),
           ),
           Expanded(
@@ -276,15 +268,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                           final metrics = notification.metrics;
                           if (metrics.extentAfter == 0) {
                             ref
-                                .watch(radioPaginationNotifierProvider.notifier)
+                                .read(radioPaginationNotifierProvider.notifier)
                                 .addPagination();
                           }
                         }
                         return false;
                       },
                       child: Scrollbar(
-                        child: ListView.builder(
+                        child: ListView.separated(
                           itemCount: radios.length,
+                          separatorBuilder: (context, index) => const Divider(
+                            height: 1,
+                            thickness: 1,
+                          ),
                           itemBuilder: (context, index) {
                             final radio = radios[index];
                             final favoriteRadio = ref
@@ -354,28 +350,28 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   }
                                   ref
                                     ..invalidate(
-                                      getFavoriteRadiosProvider(radio.id ?? ''),
+                                      getFavoriteRadiosProvider(
+                                        radio.id ?? '',
+                                      ),
                                     )
                                     ..invalidate(
                                       getFavoritesRadiosListProvider,
                                     );
                                 },
                               ),
-                              onTap: () async {
-                                await audioHandler.setSong(
-                                  MediaItem(
-                                    extras: <String, dynamic>{
-                                      'url': radio.url ?? 'No url',
-                                      'language': radio.country ?? 'No country',
-                                    },
-                                    artUri: radio.favicon?.isNotEmpty ?? false
-                                        ? Uri.parse(radio.favicon as String)
-                                        : null,
-                                    id: radio.id ?? 'No name',
-                                    title: radio.name ?? 'No name',
-                                  ),
-                                );
-                              },
+                              onTap: () async => audioHandler.setSong(
+                                MediaItem(
+                                  extras: <String, dynamic>{
+                                    'url': radio.url ?? 'No url',
+                                    'language': radio.country ?? 'No country',
+                                  },
+                                  artUri: radio.favicon?.isNotEmpty ?? false
+                                      ? Uri.parse(radio.favicon as String)
+                                      : null,
+                                  id: radio.id ?? 'No name',
+                                  title: radio.name ?? 'No name',
+                                ),
+                              ),
                             );
                           },
                         ),
