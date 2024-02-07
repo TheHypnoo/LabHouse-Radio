@@ -13,7 +13,7 @@ Minimum iOS SDK version - 12
 
 ### Getting Started
 
-Bambai contains the app code along all dependencies you will need in order to start developing.
+LabHouse Radio contains the app code along all dependencies you will need in order to start developing.
 
 ### Run locally
 
