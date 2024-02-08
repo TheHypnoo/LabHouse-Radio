@@ -47,7 +47,6 @@ dev_dependencies:
   json_serializable: 6.7.1
   isar_generator: *isar_version
   flutter_native_splash: 2.3.10
-  flutter_launcher_icons: 0.13.1
 
 flutter:
   uses-material-design: true
@@ -59,10 +58,3 @@ flutter_native_splash:
   ios: true
   android_gravity: center
   ios_content_mode: center
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/icon.png"
-  adaptive_icon_background: "#6f43c0"
-  min_sdk_android: 23
