@@ -1,12 +1,15 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:labhouse_radio/src/core/utils/debouncer_timer.dart';
+import 'package:labhouse_radio/src/core/constants/constants.dart';
 import 'package:labhouse_radio/src/features/radio/data/models/favorite_model.dart';
+import 'package:labhouse_radio/src/features/radio/domain/providers/debouncer_notifier.dart';
 import 'package:labhouse_radio/src/features/radio/domain/providers/radio_pagination.dart';
 import 'package:labhouse_radio/src/features/radio/domain/providers/radio_provider.dart';
-import 'package:marquee/marquee.dart';
+import 'package:labhouse_radio/src/features/radio/presentation/widgets/card_controls.dart';
+import 'package:labhouse_radio/src/features/radio/presentation/widgets/list_favorites.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -16,230 +19,33 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  int pagination = 0;
-  final debouncer = Debouncer(delay: const Duration(milliseconds: 500));
-
-  @override
-  void dispose() {
-    debouncer.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final listRadios = ref.watch(radioPaginationNotifierProvider);
     final audioHandler = ref.watch(audioHandlerProvider);
-    final listFavorites = ref.watch(getFavoritesRadiosListProvider);
     final mediaItem = ref.watch(streamMediaItemProvider);
-    final playbackState = ref.watch(streamPlaybackStateProvider);
-    final favorite = ref
-        .watch(getFavoriteRadiosProvider(mediaItem.value?.id ?? ''))
-        .valueOrNull;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
-        title: Image.network(
-          'https://static.wixstatic.com/media/80a726_869df0ad73b64122bc296d07a7280ef9~mv2.png/v1/crop/x_800,y_934,w_2381,h_620/fill/w_424,h_110,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/LABHOUSE_Logo2_02.png',
+        title: CachedNetworkImage(
+          imageUrl: imageLabHouse,
           width: 150,
           height: 150,
-          errorBuilder: (context, error, stackTrace) => const SizedBox(),
+          errorWidget: (context, error, stackTrace) => const SizedBox(),
         ),
       ),
-      bottomSheet: Visibility(
-        visible: mediaItem.value != null,
-        child: SafeArea(
-          child: ColoredBox(
-            color: Theme.of(context).colorScheme.secondary,
-            child: LayoutBuilder(
-              builder: (context, constraints) => SizedBox(
-                height: constraints.maxHeight * 0.1,
-                child: Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.secondary,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
-                      children: [
-                        Image.network(
-                          mediaItem.value?.artUri != null
-                              ? mediaItem.value?.artUri.toString() as String
-                              : 'https://via.placeholder.com/150',
-                          width: 50,
-                          height: 50,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const SizedBox(),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: constraints.maxWidth * 0.5,
-                              height: 25,
-                              child: Marquee(
-                                blankSpace: 10,
-                                text: mediaItem.value?.title ??
-                                    'Sin radio seleccionada',
-                                style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onSecondary,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              mediaItem.value?.extras?['language'] as String? ??
-                                  '',
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).colorScheme.onSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () async {
-                            if (favorite == null) {
-                              await ref
-                                  .read(radioRepositoryProvider)
-                                  .addFavoriteRadio(
-                                    FavoriteRadio()
-                                      ..name = mediaItem.value?.title
-                                      ..internalId = mediaItem.value?.id
-                                      ..favicon =
-                                          mediaItem.value?.artUri?.toString()
-                                      ..url = mediaItem.value?.extras?['url']
-                                              as String? ??
-                                          'No url'
-                                      ..country =
-                                          mediaItem.value?.extras?['language']
-                                                  as String? ??
-                                              'English',
-                                  );
-                            } else {
-                              await ref
-                                  .read(radioRepositoryProvider)
-                                  .removeFavoriteRadio(
-                                    favorite.id ?? 0,
-                                  );
-                            }
-                          },
-                          icon: Icon(
-                            (favorite != null)
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            color: (favorite != null)
-                                ? Colors.red
-                                : Theme.of(context).colorScheme.onSecondary,
-                            size: 36,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            if (playbackState.value?.playing ?? false) {
-                              audioHandler.pause();
-                            } else {
-                              audioHandler.play();
-                            }
-                          },
-                          icon: Icon(
-                            (playbackState.value?.playing ?? false)
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            color: Colors.white,
-                            size: 36,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      bottomSheet: const CardControls(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          switch (listFavorites) {
-            AsyncData(:final value) => Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'My Favorites',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    if (value.isEmpty)
-                      const SizedBox()
-                    else
-                      SizedBox(
-                        height: 80,
-                        child: ListView.builder(
-                          itemCount: value.length,
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            return GestureDetector(
-                              onTap: () async => audioHandler.setSong(
-                                MediaItem(
-                                  extras: <String, dynamic>{
-                                    'url': value[index].url ?? 'No url',
-                                    'language':
-                                        value[index].country ?? 'No country',
-                                  },
-                                  artUri:
-                                      value[index].favicon?.isNotEmpty ?? false
-                                          ? Uri.parse(
-                                              value[index].favicon as String,
-                                            )
-                                          : null,
-                                  id: value[index].internalId ?? 'No name',
-                                  title: value[index].name ?? 'No name',
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundImage: Image.network(
-                                        value[index].favicon?.isNotEmpty ??
-                                                false
-                                            ? value[index].favicon as String
-                                            : 'https://via.placeholder.com/150',
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                const SizedBox(),
-                                      ).image,
-                                    ),
-                                    Text(
-                                      value[index].name ?? 'No name',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            AsyncError(:final error) => Text('error: $error'),
-            _ => const Text('loading'),
-          },
+          const ListFavorites(),
           Padding(
             padding: const EdgeInsets.all(8),
             child: CupertinoSearchTextField(
-              onChanged: (value) => debouncer.run(() async {
+              onChanged: (value) => ref
+                  .read(debouncerNotifierProvider.call(Durations.long2))
+                  .run(() async {
                 if (value.isEmpty) {
                   await ref
                       .read(radioPaginationNotifierProvider.notifier)
@@ -289,14 +95,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 )
                                 .value;
                             return ListTile(
-                              leading: CircleAvatar(
-                                backgroundImage: Image.network(
-                                  radio.favicon?.isNotEmpty ?? false
+                              leading: AspectRatio(
+                                aspectRatio: 0.8,
+                                child: CachedNetworkImage(
+                                  imageUrl: radio.favicon?.isNotEmpty ?? false
                                       ? radio.favicon as String
                                       : 'https://via.placeholder.com/150',
-                                  errorBuilder: (context, error, stackTrace) =>
+                                  imageBuilder: (context, imageProvider) =>
+                                      CircleAvatar(
+                                    backgroundImage: imageProvider,
+                                  ),
+                                  errorWidget: (context, error, stackTrace) =>
                                       const SizedBox(),
-                                ).image,
+                                ),
                               ),
                               title: Text(
                                 radio.name ?? 'No name',
@@ -306,11 +117,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ),
                               subtitle: Row(
                                 children: [
-                                  Image.network(
-                                    'https://flagsapi.com/${radio.countrycode?.toUpperCase()}/flat/32.png',
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const SizedBox(),
+                                  CachedNetworkImage(
+                                    imageUrl: (radio.countrycode?.isNotEmpty ??
+                                            false)
+                                        ? 'https://flagsapi.com/${radio.countrycode?.toUpperCase()}/flat/32.png'
+                                        : 'https://via.placeholder.com/32',
+                                    errorWidget: (context, error, stackTrace) =>
+                                        const SizedBox(),
                                   ),
                                   const SizedBox(width: 8),
                                   Flexible(
